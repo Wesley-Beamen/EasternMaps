@@ -1,453 +1,112 @@
-const locationButton = document.getElementById("locationButton");
-
-const latitudeElement = document.getElementById("latitude");
-const longitudeElement = document.getElementById("longitude");
-const accuracyElement = document.getElementById("accuracy");
-
-const statusElement = document.getElementById("status");
-
-
 // ================================
-// LOCATION SETTINGS
+// LOAD HALLWAY COORDINATES
 // ================================
 
-const REQUIRED_READINGS = 10;
-
-// Maximum GPS accuracy we will accept
-// Smaller = more accurate
-const MAX_ACCURACY = 50;
-
-// How close readings need to be to each other
-// for us to consider them stable
-const MAX_DISTANCE_BETWEEN_READINGS = 30;
-
-
-// ================================
-// VARIABLES
-// ================================
-
-let watchID = null;
-
-let readings = [];
-
-let bestAccuracy = Infinity;
-
-let stableLocation = null;
-
-
-// ================================
-// START LOCATION
-// ================================
-
-locationButton.addEventListener("click", startLocation);
-
-
-function startLocation() {
-
-    if (!navigator.geolocation) {
-
-        statusElement.textContent =
-            "Your browser does not support location services.";
-
-        return;
-    }
-
-
-    // Reset everything
-    readings = [];
-
-    bestAccuracy = Infinity;
-
-    stableLocation = null;
-
-
-    latitudeElement.textContent = "--";
-    longitudeElement.textContent = "--";
-    accuracyElement.textContent = "--";
-
-
-    locationButton.disabled = true;
-
-    locationButton.textContent = "Locating...";
-
-
-    statusElement.textContent =
-        "Getting your location...";
-
-
-    // Stop an old location watcher
-    if (watchID !== null) {
-
-        navigator.geolocation.clearWatch(watchID);
-
-    }
-
-
-    // Start watching location
-    watchID = navigator.geolocation.watchPosition(
-
-        handleLocation,
-
-        handleLocationError,
-
-        {
-            enableHighAccuracy: true,
-
-            timeout: 15000,
-
-            maximumAge: 0
-        }
-
-    );
-
+async function loadHallways() {
+    const response = await fetch("Cords.json");
+    const data = await response.json();
+    return data;
 }
 
 
 // ================================
-// LOCATION RECEIVED
+// BUILD GRAPH FROM JSON
 // ================================
 
-function handleLocation(position) {
+function buildGraph(nodes, edges) {
+    const graph = {};
 
-    const latitude = position.coords.latitude;
-
-    const longitude = position.coords.longitude;
-
-    const accuracy = position.coords.accuracy;
-
-
-    console.log(
-        "GPS:",
-        latitude,
-        longitude,
-        "Accuracy:",
-        accuracy
-    );
-
-
-    // Ignore readings that are extremely inaccurate
-    if (accuracy > MAX_ACCURACY) {
-
-        statusElement.textContent =
-            "GPS signal is not accurate enough yet. Searching...";
-
-        accuracyElement.textContent =
-            Math.round(accuracy) + " meters";
-
-        return;
+    function addEdge(a, b, distance) {
+        if (!graph[a]) graph[a] = [];
+        graph[a].push({ node: b, distance });
     }
 
+    edges.forEach(e => {
+        const a = e.from;
+        const b = e.to;
 
-    // Add reading
-    readings.push({
+        const dist = calculateDistance(
+            nodes[a].lat, nodes[a].lon,
+            nodes[b].lat, nodes[b].lon
+        );
 
-        latitude: latitude,
-
-        longitude: longitude,
-
-        accuracy: accuracy
-
+        addEdge(a, b, dist);
+        addEdge(b, a, dist); // bidirectional
     });
 
-
-    // Keep only the newest readings
-    if (readings.length > REQUIRED_READINGS) {
-
-        readings.shift();
-
-    }
-
-
-    // Find the best accuracy
-    if (accuracy < bestAccuracy) {
-
-        bestAccuracy = accuracy;
-
-    }
-
-
-    // Display current best reading
-    latitudeElement.textContent =
-        latitude.toFixed(6);
-
-    longitudeElement.textContent =
-        longitude.toFixed(6);
-
-    accuracyElement.textContent =
-        Math.round(accuracy) + " meters";
-
-
-    statusElement.textContent =
-        `Collecting accurate readings: ${readings.length}/${REQUIRED_READINGS}`;
-
-
-    // Check whether we have enough readings
-    if (readings.length >= REQUIRED_READINGS) {
-
-        checkLocationStability();
-
-    }
-
+    return graph;
 }
 
 
 // ================================
-// CHECK LOCATION STABILITY
+// DIJKSTRA SHORTEST PATH
 // ================================
 
-function checkLocationStability() {
+function findShortestPath(graph, startNode, endNode) {
+    const distances = {};
+    const visited = new Set();
+    const previous = {};
 
-    if (readings.length < REQUIRED_READINGS) {
+    Object.keys(graph).forEach(node => distances[node] = Infinity);
+    distances[startNode] = 0;
 
-        return;
+    while (true) {
+        let current = null;
 
-    }
-
-
-    // Calculate average latitude
-    let totalLatitude = 0;
-
-    let totalLongitude = 0;
-
-    let totalAccuracy = 0;
-
-
-    for (const reading of readings) {
-
-        totalLatitude += reading.latitude;
-
-        totalLongitude += reading.longitude;
-
-        totalAccuracy += reading.accuracy;
-
-    }
-
-
-    const averageLatitude =
-        totalLatitude / readings.length;
-
-    const averageLongitude =
-        totalLongitude / readings.length;
-
-    const averageAccuracy =
-        totalAccuracy / readings.length;
-
-
-    // Check how far each reading is from the average
-    let maximumDistance = 0;
-
-
-    for (const reading of readings) {
-
-        const distance = calculateDistance(
-
-            averageLatitude,
-
-            averageLongitude,
-
-            reading.latitude,
-
-            reading.longitude
-
-        );
-
-
-        if (distance > maximumDistance) {
-
-            maximumDistance = distance;
-
+        for (const node in distances) {
+            if (!visited.has(node)) {
+                if (current === null || distances[node] < distances[current]) {
+                    current = node;
+                }
+            }
         }
 
+        if (current === null) break;
+        if (current === endNode) break;
+
+        visited.add(current);
+
+        graph[current].forEach(edge => {
+            const newDist = distances[current] + edge.distance;
+            if (newDist < distances[edge.node]) {
+                distances[edge.node] = newDist;
+                previous[edge.node] = current;
+            }
+        });
     }
 
+    const path = [];
+    let node = endNode;
 
-    console.log(
-        "Average location:",
-        averageLatitude,
-        averageLongitude
-    );
-
-    console.log(
-        "Average accuracy:",
-        averageAccuracy
-    );
-
-    console.log(
-        "Maximum spread:",
-        maximumDistance
-    );
-
-
-    // If readings are spread too far apart,
-    // keep collecting
-    if (maximumDistance > MAX_DISTANCE_BETWEEN_READINGS) {
-
-        statusElement.textContent =
-            "GPS readings are still moving. Stabilizing location...";
-
-        return;
-
+    while (node) {
+        path.unshift(node);
+        node = previous[node];
     }
 
-
-    // ================================
-    // LOCATION IS STABLE
-    // ================================
-
-    stableLocation = {
-
-        latitude: averageLatitude,
-
-        longitude: averageLongitude,
-
-        accuracy: averageAccuracy
-
-    };
-
-
-    // Display stable location
-    latitudeElement.textContent =
-        averageLatitude.toFixed(6);
-
-    longitudeElement.textContent =
-        averageLongitude.toFixed(6);
-
-    accuracyElement.textContent =
-        Math.round(averageAccuracy) + " meters";
-
-
-    statusElement.textContent =
-        "✓ Location confirmed and stable.";
-
-
-    locationButton.textContent =
-        "Location Locked";
-
-
-    // Stop collecting
-    if (watchID !== null) {
-
-        navigator.geolocation.clearWatch(watchID);
-
-        watchID = null;
-
-    }
-
-
-    console.log(
-        "FINAL LOCATION:",
-        stableLocation
-    );
-
-
-    // This is where we will eventually
-    // check the school boundary.
-
+    return path;
 }
 
 
 // ================================
-// CALCULATE DISTANCE
+// MAIN PATHFINDING FUNCTION
 // ================================
 
-function calculateDistance(
-    lat1,
-    lon1,
-    lat2,
-    lon2
-) {
+async function computePath() {
+    const hallwayData = await loadHallways();
 
-    const earthRadius = 6371000;
+    const graph = buildGraph(hallwayData.nodes, hallwayData.edges);
 
+    const start = "media_center";
+    const end = "room_205";
 
-    const latitudeDifference =
-        degreesToRadians(lat2 - lat1);
+    const path = findShortestPath(graph, start, end);
 
-    const longitudeDifference =
-        degreesToRadians(lon2 - lon1);
-
-
-    const a =
-
-        Math.sin(latitudeDifference / 2) *
-        Math.sin(latitudeDifference / 2)
-
-        +
-
-        Math.cos(degreesToRadians(lat1)) *
-        Math.cos(degreesToRadians(lat2)) *
-
-        Math.sin(longitudeDifference / 2) *
-        Math.sin(longitudeDifference / 2);
-
-
-    const c =
-        2 * Math.atan2(
-            Math.sqrt(a),
-            Math.sqrt(1 - a)
-        );
-
-
-    return earthRadius * c;
-
+    console.log("Shortest path:", path);
 }
 
 
 // ================================
-// DEGREES → RADIANS
+// RUN PATHFINDING
 // ================================
 
-function degreesToRadians(degrees) {
-
-    return degrees * (Math.PI / 180);
-
-}
-
-
-// ================================
-// LOCATION ERRORS
-// ================================
-
-function handleLocationError(error) {
-
-    console.error(
-        "Location error:",
-        error
-    );
-
-
-    if (error.code === 1) {
-
-        statusElement.textContent =
-            "Location permission was denied.";
-
-    }
-
-    else if (error.code === 2) {
-
-        statusElement.textContent =
-            "Your location could not be determined.";
-
-    }
-
-    else if (error.code === 3) {
-
-        statusElement.textContent =
-            "Location request timed out. Try again.";
-
-    }
-
-    else {
-
-        statusElement.textContent =
-            "An unknown location error occurred.";
-
-    }
-
-
-    locationButton.disabled = false;
-
-    locationButton.textContent =
-        "Try Again";
-
-}
+computePath();
