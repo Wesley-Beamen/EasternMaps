@@ -10,7 +10,33 @@ async function loadHallways() {
 
 
 // ================================
-// BUILD GRAPH FROM JSON
+// DISTANCE CALCULATION
+// ================================
+
+function degreesToRadians(deg) {
+    return deg * (Math.PI / 180);
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const earthRadius = 6371000;
+
+    const dLat = degreesToRadians(lat2 - lat1);
+    const dLon = degreesToRadians(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(degreesToRadians(lat1)) *
+        Math.cos(degreesToRadians(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earthRadius * c;
+}
+
+
+// ================================
+// BUILD GRAPH
 // ================================
 
 function buildGraph(nodes, edges) {
@@ -101,12 +127,24 @@ async function computePath() {
 
     const path = findShortestPath(graph, start, end);
 
-    console.log("Shortest path:", path);
+    const output = document.getElementById("pathOutput");
+
+    if (!path || path.length === 0) {
+        output.style.display = "block";
+        output.textContent = "No valid path found.";
+        return;
+    }
+
+    output.style.display = "block";
+    output.innerHTML = `
+        <strong>Shortest Path:</strong><br><br>
+        ${path.join(" ➝ ")}
+    `;
 }
 
 
 // ================================
-// RUN PATHFINDING
+// BUTTON CLICK
 // ================================
 
-computePath();
+document.getElementById("pathButton").addEventListener("click", computePath);
