@@ -1,5 +1,5 @@
 // ================================
-// LOAD HALLWAY COORDINATES
+// LOAD JSON
 // ================================
 
 async function loadHallways() {
@@ -10,7 +10,7 @@ async function loadHallways() {
 
 
 // ================================
-// DISTANCE CALCULATION
+// DISTANCE FUNCTION
 // ================================
 
 function degreesToRadians(deg) {
@@ -24,10 +24,10 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const dLon = degreesToRadians(lon2 - lon1);
 
     const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.sin(dLat / 2) ** 2 +
         Math.cos(degreesToRadians(lat1)) *
         Math.cos(degreesToRadians(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        Math.sin(dLon / 2) ** 2;
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -42,9 +42,9 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function buildGraph(nodes, edges) {
     const graph = {};
 
-    function addEdge(a, b, distance) {
+    function addEdge(a, b, dist) {
         if (!graph[a]) graph[a] = [];
-        graph[a].push({ node: b, distance });
+        graph[a].push({ node: b, distance: dist });
     }
 
     edges.forEach(e => {
@@ -57,7 +57,7 @@ function buildGraph(nodes, edges) {
         );
 
         addEdge(a, b, dist);
-        addEdge(b, a, dist); // bidirectional
+        addEdge(b, a, dist);
     });
 
     return graph;
@@ -65,7 +65,7 @@ function buildGraph(nodes, edges) {
 
 
 // ================================
-// DIJKSTRA SHORTEST PATH
+// DIJKSTRA
 // ================================
 
 function findShortestPath(graph, startNode, endNode) {
@@ -73,7 +73,7 @@ function findShortestPath(graph, startNode, endNode) {
     const visited = new Set();
     const previous = {};
 
-    Object.keys(graph).forEach(node => distances[node] = Infinity);
+    Object.keys(graph).forEach(n => distances[n] = Infinity);
     distances[startNode] = 0;
 
     while (true) {
@@ -94,6 +94,7 @@ function findShortestPath(graph, startNode, endNode) {
 
         graph[current].forEach(edge => {
             const newDist = distances[current] + edge.distance;
+
             if (newDist < distances[edge.node]) {
                 distances[edge.node] = newDist;
                 previous[edge.node] = current;
@@ -114,7 +115,7 @@ function findShortestPath(graph, startNode, endNode) {
 
 
 // ================================
-// MAIN PATHFINDING FUNCTION
+// MAIN
 // ================================
 
 async function computePath() {
@@ -144,7 +145,7 @@ async function computePath() {
 
 
 // ================================
-// BUTTON CLICK
+// BUTTON
 // ================================
 
 document.getElementById("pathButton").addEventListener("click", computePath);
