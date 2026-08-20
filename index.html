@@ -64,39 +64,6 @@
             transform: scale(0.98);
         }
 
-        #status {
-            margin-top: 20px;
-            padding: 12px;
-            border-radius: 10px;
-            background: #f1f5f9;
-            color: #475569;
-            font-size: 14px;
-        }
-
-        .location-card {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .location-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px;
-            background: #f8fafc;
-            border-radius: 10px;
-        }
-
-        .location-item span {
-            color: #64748b;
-        }
-
-        .location-item strong {
-            color: #111827;
-        }
-
         #pathOutput {
             margin-top: 25px;
             padding: 15px;
@@ -115,29 +82,7 @@
     <div class="container">
 
         <h1>School Navigator</h1>
-
-        <p class="subtitle">Location Detection Test</p>
-
-        <button id="locationButton">Find My Location</button>
-
-        <div id="status">Location has not been requested.</div>
-
-        <div class="location-card">
-            <div class="location-item">
-                <span>Latitude</span>
-                <strong id="latitude">--</strong>
-            </div>
-
-            <div class="location-item">
-                <span>Longitude</span>
-                <strong id="longitude">--</strong>
-            </div>
-
-            <div class="location-item">
-                <span>Accuracy</span>
-                <strong id="accuracy">--</strong>
-            </div>
-        </div>
+        <p class="subtitle">Shortest Path Calculator</p>
 
         <button id="pathButton">Compute Shortest Path</button>
 
