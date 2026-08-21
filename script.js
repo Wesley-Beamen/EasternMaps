@@ -1,25 +1,14 @@
-// ================================
-// LOAD JSON
-// ================================
-
 async function loadHallways() {
     const response = await fetch("Cords.json");
-    const data = await response.json();
-    return data;
+    return await response.json();
 }
-
-
-// ================================
-// DISTANCE FUNCTION
-// ================================
 
 function degreesToRadians(deg) {
     return deg * (Math.PI / 180);
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
-    const earthRadius = 6371000;
-
+    const R = 6371000;
     const dLat = degreesToRadians(lat2 - lat1);
     const dLon = degreesToRadians(lon2 - lon1);
 
@@ -29,15 +18,8 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         Math.cos(degreesToRadians(lat2)) *
         Math.sin(dLon / 2) ** 2;
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return earthRadius * c;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
-
-// ================================
-// BUILD GRAPH
-// ================================
 
 function buildGraph(nodes, edges) {
     const graph = {};
@@ -62,11 +44,6 @@ function buildGraph(nodes, edges) {
 
     return graph;
 }
-
-
-// ================================
-// DIJKSTRA
-// ================================
 
 function findShortestPath(graph, startNode, endNode) {
     const distances = {};
@@ -113,39 +90,41 @@ function findShortestPath(graph, startNode, endNode) {
     return path;
 }
 
-
-// ================================
-// MAIN
-// ================================
-
 async function computePath() {
-    const hallwayData = await loadHallways();
+    const data = await loadHallways();
 
-    const graph = buildGraph(hallwayData.nodes, hallwayData.edges);
+    const nodes = data.nodes;
+    const edges = [...data.edges];
 
-    const start = "media_center";
-    const end = "room_205";
+    // SNAP ROOM TO NEAREST HALLWAY NODE (within 5 meters)
+    const room = nodes["room_205"];
 
-    const path = findShortestPath(graph, start, end);
+    Object.keys(nodes).forEach(n => {
+        if (n === "room_205") return;
+
+        const dist = calculateDistance(room.lat, room.lon, nodes[n].lat, nodes[n].lon);
+
+        if (dist <= 5) {
+            edges.push({ from: "room_205", to: n });
+        }
+    });
+
+    const graph = buildGraph(nodes, edges);
+
+    const path = findShortestPath(graph, "media_center", "room_205");
 
     const output = document.getElementById("pathOutput");
+    output.style.display = "block";
 
     if (!path || path.length === 0) {
-        output.style.display = "block";
         output.textContent = "No valid path found.";
         return;
     }
 
-    output.style.display = "block";
     output.innerHTML = `
         <strong>Shortest Path:</strong><br><br>
         ${path.join(" ➝ ")}
     `;
 }
-
-
-// ================================
-// BUTTON
-// ================================
 
 document.getElementById("pathButton").addEventListener("click", computePath);
