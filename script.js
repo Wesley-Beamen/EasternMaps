@@ -146,6 +146,44 @@ async function computePath() {
   const startNode = startSelect.value;
   const endNode = endSelect.value;
 
+  // ================================
+  // ROOM → HALLWAY SNAPPING
+  // ================================
+
+  const allRooms = ["108", "101", "room_205"];
+
+  const hallwayNodes = [
+    "100_start", "100_mid", "100_end",
+    "200_start", "200_mid", "200_end"
+  ];
+
+  allRooms.forEach(roomName => {
+    const room = nodes[roomName];
+
+    let closestNode = null;
+    let closestDist = Infinity;
+
+    hallwayNodes.forEach(name => {
+      const n = nodes[name];
+      const dist = calculateDistance(room.lat, room.lon, n.lat, n.lon);
+
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestNode = name;
+      }
+    });
+
+    const SNAP_DISTANCE = 40; // meters
+
+    if (closestNode && closestDist <= SNAP_DISTANCE) {
+      edges.push({ from: roomName, to: closestNode });
+    }
+  });
+
+  // ================================
+  // RUN PATHFINDING
+  // ================================
+
   const graph = buildGraph(nodes, edges);
   const path = findShortestPath(graph, startNode, endNode);
 
