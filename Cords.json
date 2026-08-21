@@ -4,20 +4,25 @@
     "room_205":     { "lat": 39.850164, "lon": -74.968364 },
 
     "100_start":    { "lat": 39.849847, "lon": -74.968719 },
+    "100_mid":      { "lat": 39.850164, "lon": -74.968595 },
     "100_end":      { "lat": 39.850481, "lon": -74.968472 },
 
     "200_start":    { "lat": 39.849800, "lon": -74.968483 },
+    "200_mid":      { "lat": 39.850128, "lon": -74.968368 },
     "200_end":      { "lat": 39.850456, "lon": -74.968253 }
   },
 
   "edges": [
     { "from": "media_center", "to": "100_start" },
-    { "from": "100_start",    "to": "100_end" },
-
     { "from": "media_center", "to": "200_start" },
-    { "from": "200_start",    "to": "200_end" },
 
-    { "from": "100_end",      "to": "room_205" },
-    { "from": "200_end",      "to": "room_205" }
+    { "from": "100_start", "to": "100_mid" },
+    { "from": "100_mid",   "to": "100_end" },
+
+    { "from": "200_start", "to": "200_mid" },
+    { "from": "200_mid",   "to": "200_end" },
+
+    { "from": "100_start", "to": "200_start" },
+    { "from": "100_end",   "to": "200_end" }
   ]
 }
