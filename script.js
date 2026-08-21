@@ -9,51 +9,19 @@ async function loadHallways() {
 
 
 // ================================
-// LAT/LON → METERS CONVERSION
+// LAT/LON → METERS
 // ================================
-// Converts lat/lon to a flat coordinate system so geometry works
-
-function latLonToMeters(lat, lon) {
-    const R = 6371000; // Earth radius in meters
-    const x = R * degreesToRadians(lon) * Math.cos(degreesToRadians(lat));
-    const y = R * degreesToRadians(lat);
-    return { x, y };
-}
 
 function degreesToRadians(deg) {
     return deg * (Math.PI / 180);
 }
 
-
-// ================================
-// POINT → LINE SEGMENT DISTANCE (in meters)
-// ================================
-
-function distancePointToSegment(px, py, ax, ay, bx, by) {
-    const APx = px - ax;
-    const APy = py - ay;
-    const ABx = bx - ax;
-    const ABy = by - ay;
-
-    const ab2 = ABx * ABx + ABy * ABy;
-    const ap_ab = APx * ABx + APy * ABy;
-
-    let t = ap_ab / ab2;
-    t = Math.max(0, Math.min(1, t));
-
-    const closestX = ax + ABx * t;
-    const closestY = ay + ABy * t;
-
-    const dx = px - closestX;
-    const dy = py - closestY;
-
-    return Math.sqrt(dx * dx + dy * dy);
+function latLonToMeters(lat, lon) {
+    const R = 6371000;
+    const x = R * degreesToRadians(lon) * Math.cos(degreesToRadians(lat));
+    const y = R * degreesToRadians(lat);
+    return { x, y };
 }
-
-
-// ================================
-// DISTANCE BETWEEN TWO LAT/LON POINTS
-// ================================
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const p1 = latLonToMeters(lat1, lon1);
@@ -157,32 +125,31 @@ async function computePath() {
 
     const room = nodes["room_205"];
 
-    // Convert room to meters
-    const roomM = latLonToMeters(room.lat, room.lon);
-
-    const hallwayPairs = [
-        ["100_start", "100_end"],
-        ["200_start", "200_end"]
+    const candidateNodes = [
+        "100_start", "100_mid", "100_end",
+        "200_start", "200_mid", "200_end"
     ];
 
-    // SNAP ROOM TO ANY POINT ALONG HALLWAY (within 5 meters)
-    hallwayPairs.forEach(([startNode, endNode]) => {
-        const A = nodes[startNode];
-        const B = nodes[endNode];
+    let closestNode = null;
+    let closestDist = Infinity;
 
-        const A_m = latLonToMeters(A.lat, A.lon);
-        const B_m = latLonToMeters(B.lat, B.lon);
+    candidateNodes.forEach(name => {
+        const n = nodes[name];
+        const dist = calculateDistance(room.lat, room.lon, n.lat, n.lon);
 
-        const dist = distancePointToSegment(
-            roomM.x, roomM.y,
-            A_m.x, A_m.y,
-            B_m.x, B_m.y
-        );
-
-        if (dist <= 5) {
-            edges.push({ from: "room_205", to: startNode });
+        if (dist < closestDist) {
+            closestDist = dist;
+            closestNode = name;
         }
     });
+
+    const SNAP_DISTANCE = 25; // meters
+
+    if (closestNode && closestDist <= SNAP_DISTANCE) {
+        edges.push({ from: "room_205", to: closestNode });
+    } else {
+        edges.push({ from: "room_205", to: "200_mid" });
+    }
 
     const graph = buildGraph(nodes, edges);
 
