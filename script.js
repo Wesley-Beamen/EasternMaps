@@ -9,54 +9,58 @@ async function loadHallways() {
 
 
 // ================================
-// DISTANCE FUNCTIONS
+// LAT/LON → METERS CONVERSION
 // ================================
+// Converts lat/lon to a flat coordinate system so geometry works
+
+function latLonToMeters(lat, lon) {
+    const R = 6371000; // Earth radius in meters
+    const x = R * degreesToRadians(lon) * Math.cos(degreesToRadians(lat));
+    const y = R * degreesToRadians(lat);
+    return { x, y };
+}
 
 function degreesToRadians(deg) {
     return deg * (Math.PI / 180);
 }
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const dLat = degreesToRadians(lat2 - lat1);
-    const dLon = degreesToRadians(lon2 - lon1);
-
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(degreesToRadians(lat1)) *
-        Math.cos(degreesToRadians(lat2)) *
-        Math.sin(dLon / 2) ** 2;
-
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 
 // ================================
-// POINT → LINE SEGMENT DISTANCE
+// POINT → LINE SEGMENT DISTANCE (in meters)
 // ================================
-// Returns distance from point P to segment AB
 
 function distancePointToSegment(px, py, ax, ay, bx, by) {
-    const A = { x: ax, y: ay };
-    const B = { x: bx, y: by };
-    const P = { x: px, y: py };
+    const APx = px - ax;
+    const APy = py - ay;
+    const ABx = bx - ax;
+    const ABy = by - ay;
 
-    const AB = { x: B.x - A.x, y: B.y - A.y };
-    const AP = { x: P.x - A.x, y: P.y - A.y };
-
-    const ab2 = AB.x * AB.x + AB.y * AB.y;
-    const ap_ab = AP.x * AB.x + AP.y * AB.y;
+    const ab2 = ABx * ABx + ABy * ABy;
+    const ap_ab = APx * ABx + APy * ABy;
 
     let t = ap_ab / ab2;
     t = Math.max(0, Math.min(1, t));
 
-    const closest = {
-        x: A.x + AB.x * t,
-        y: A.y + AB.y * t
-    };
+    const closestX = ax + ABx * t;
+    const closestY = ay + ABy * t;
 
-    const dx = P.x - closest.x;
-    const dy = P.y - closest.y;
+    const dx = px - closestX;
+    const dy = py - closestY;
+
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+
+// ================================
+// DISTANCE BETWEEN TWO LAT/LON POINTS
+// ================================
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const p1 = latLonToMeters(lat1, lon1);
+    const p2 = latLonToMeters(lat2, lon2);
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
 
     return Math.sqrt(dx * dx + dy * dy);
 }
@@ -153,7 +157,9 @@ async function computePath() {
 
     const room = nodes["room_205"];
 
-    // Hallway pairs (start → end)
+    // Convert room to meters
+    const roomM = latLonToMeters(room.lat, room.lon);
+
     const hallwayPairs = [
         ["100_start", "100_end"],
         ["200_start", "200_end"]
@@ -164,10 +170,13 @@ async function computePath() {
         const A = nodes[startNode];
         const B = nodes[endNode];
 
+        const A_m = latLonToMeters(A.lat, A.lon);
+        const B_m = latLonToMeters(B.lat, B.lon);
+
         const dist = distancePointToSegment(
-            room.lat, room.lon,
-            A.lat, A.lon,
-            B.lat, B.lon
+            roomM.x, roomM.y,
+            A_m.x, A_m.y,
+            B_m.x, B_m.y
         );
 
         if (dist <= 5) {
