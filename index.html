@@ -1,96 +1,94 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>School Navigator</title>
-
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>School Pathfinding</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #f2f4f7;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 500px;
-            background: white;
-            padding: 30px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 30px;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 25px;
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            background: #2563eb;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        #pathOutput {
-            margin-top: 25px;
-            padding: 15px;
-            background: #e2e8f0;
-            border-radius: 10px;
-            color: #1e293b;
-            font-size: 15px;
-            text-align: left;
-            display: none;
-        }
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px;
+      }
+      h1 {
+        margin-bottom: 20px;
+      }
+      .controls {
+        background: #1f2937;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 320px;
+      }
+      select, button {
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: none;
+        font-size: 14px;
+      }
+      select {
+        background: #111827;
+        color: #e5e7eb;
+      }
+      button {
+        background: #2563eb;
+        color: #e5e7eb;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      button:hover {
+        background: #1d4ed8;
+      }
+      #pathOutput {
+        margin-top: 20px;
+        background: #111827;
+        padding: 15px;
+        border-radius: 10px;
+        display: none;
+        max-width: 500px;
+        word-wrap: break-word;
+      }
     </style>
-</head>
+  </head>
+  <body>
+    <h1>Eastern Regional Pathfinding</h1>
 
-<body>
+    <div class="controls">
+      <label for="startRoom">Start location:</label>
+      <select id="startRoom">
+        <option value="108">Room 108</option>
+        <option value="101">Room 101</option>
+        <option value="100_start">100 Hallway Start</option>
+        <option value="100_end">100 Hallway End</option>
+        <option value="200_start">200 Hallway Start</option>
+        <option value="200_end">200 Hallway End</option>
+        <option value="media_center">Media Center</option>
+        <option value="room_205">Room 205</option>
+      </select>
 
-    <div class="container">
+      <label for="endRoom">End location:</label>
+      <select id="endRoom">
+        <option value="108">Room 108</option>
+        <option value="101">Room 101</option>
+        <option value="100_start">100 Hallway Start</option>
+        <option value="100_end">100 Hallway End</option>
+        <option value="200_start">200 Hallway Start</option>
+        <option value="200_end">200 Hallway End</option>
+        <option value="media_center">Media Center</option>
+        <option value="room_205">Room 205</option>
+      </select>
 
-        <h1>School Navigator</h1>
-        <p class="subtitle">Shortest Path Calculator</p>
-
-        <button id="pathButton">Compute Shortest Path</button>
-
-        <div id="pathOutput"></div>
-
+      <button id="pathButton">Compute Path</button>
     </div>
 
-    <script src="script.js"></script>
+    <div id="pathOutput"></div>
 
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
